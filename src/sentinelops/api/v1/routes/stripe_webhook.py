@@ -1,5 +1,7 @@
+import json
+
 import stripe
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -21,33 +23,36 @@ async def stripe_webhook(
 
     payload = await request.body()
 
-    # 1) signature verification
+    # 1) Verify signature
     try:
         event = stripe.Webhook.construct_event(
             payload=payload,
             sig_header=stripe_signature,
             secret=settings.stripe_webhook_secret,
         )
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        # 이 줄이 있으면 원인 파악이 훨씬 쉬워져
+        raise HTTPException(status_code=400, detail=f"Invalid signature: {e}")
+    
+    provider_event_id = event["id"]
+    event_type = event["type"]
+    # raw_json = json.dumps(event, default=str)
 
-    # 2) store (idempotent by provider_event_id unique)
-    evt_id = event["id"]
-    evt_type = event["type"]
-
+    # 2) Save
     row = Event(
         source="stripe",
-        provider_event_id=evt_id,
-        event_type=evt_type,
-        raw=payload.decode("utf-8"),
+        provider_event_id=provider_event_id,
+        event_type=event_type,
+        # raw=raw_json,
+        raw=event,
     )
 
+    # 3) Idempotency: 이미 저장된 이벤트면 스킵
     try:
         db.add(row)
         db.commit()
     except IntegrityError:
         db.rollback()
-        # already received -> return 200 so Stripe doesn't retry
-        return Response(status_code=200)
+        return {"ok": True, "deduped": True, "provider_event_id": provider_event_id}
 
-    return Response(status_code=200)
+    return {"ok": True, "saved": True, "provider_event_id": provider_event_id, "event_type": event_type}
