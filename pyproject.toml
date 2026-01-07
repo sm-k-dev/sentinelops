@@ -8,7 +8,8 @@ dependencies = [
   "pydantic-settings",
   "python-dotenv",
   "sqlalchemy",
-  "psycopg[binary]"
+  "psycopg[binary]",
+  "alembic"
 ]
 
 [tool.ruff]
