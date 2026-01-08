@@ -31,6 +31,7 @@ def upgrade() -> None:
     op.alter_column('events', 'event_type',
                existing_type=sa.VARCHAR(length=100),
                nullable=True)
+    op.alter_column('events', 'status', server_default=None)
     op.create_index(op.f('ix_events_status'), 'events', ['status'], unique=False)
     # ### end Alembic commands ###
 
