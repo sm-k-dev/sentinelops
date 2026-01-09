@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from sentinelops.api.v1.routes.health import router as health_router
-from sentinelops.api.v1.routes.stripe_webhook import router as stripe_router
+from sentinelops.api.v1.routers.health import router as health_router
+from sentinelops.api.v1.routers.stripe_webhook import router as stripe_router
 from sentinelops.core.config import settings
 
 app = FastAPI(title="SentinelOps", version="0.1.0")
