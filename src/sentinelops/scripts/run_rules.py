@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 
+from sentinelops.core.anomaly_rules import RULES
 from sentinelops.db.session import SessionLocal
 from sentinelops.models.event import Event
 from sentinelops.models.anomaly import Anomaly
-from sentinelops.core.anomaly_rules import RULES
+from sentinelops.services.notifications.slack import send_slack_message
+from sentinelops.services.notifications.templates import anomaly_to_slack_text
 
 
 def floor_to_5min(dt: datetime) -> datetime:
@@ -68,6 +70,9 @@ def run_webhook_integrity_rule(db: Session):
 
     db.add(anomaly)
     db.commit()
+
+    send_slack_message(anomaly_to_slack_text(anomaly))
+
     print(f"Anomaly created: {rule.code}")
 
 def run_payment_failure_spike_rule(db: Session):
@@ -119,8 +124,12 @@ def run_payment_failure_spike_rule(db: Session):
             "window_minutes": 30,
         },
     )
+
     db.add(anomaly)
     db.commit()
+
+    send_slack_message(anomaly_to_slack_text(anomaly))
+
     print(f"Anomaly created: {rule.code}")
 
 def run_rapid_retry_failure_rule(db: Session):
@@ -173,8 +182,12 @@ def run_rapid_retry_failure_rule(db: Session):
             "window_minutes": 5,
         },
     )
+
     db.add(anomaly)
     db.commit()
+
+    send_slack_message(anomaly_to_slack_text(anomaly))
+    
     print(f"Anomaly created: {rule.code}")
 
 def main():

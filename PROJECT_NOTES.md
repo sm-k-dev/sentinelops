@@ -3,6 +3,7 @@
 ## Goal
 
 AI-powered revenue & operations observability system.
+This document captures architectural decisions and iteration milestones during development.
 
 ## Key Decisions
 
@@ -51,5 +52,38 @@ AI-powered revenue & operations observability system.
 
 - Anomalies are created with evidence for investigation
 - Duplicate anomalies are prevented within the same time window
+- Rules were validated using real Stripe test events via Stripe CLI
 
 Status: v0.2 complete – rule engine validated with real Stripe events and idempotent time-window execution.
+
+---
+
+## v0.3 – Rule Engine Scheduling
+
+SentinelOps rule engine is designed to run as a batch job, separate from webhook ingestion.
+
+### Local Scheduling (Development)
+
+In local development, the rule runner can be scheduled using OS-level schedulers.
+
+Example (Windows Task Scheduler):
+
+- Command:
+  python -m sentinelops.scripts.run_rules
+- Frequency:
+  Every 5 minutes
+- Working directory:
+  Project root (SentinelOps)
+
+This ensures anomaly detection runs automatically without blocking webhook requests.
+The 5-minute execution interval balances timely detection of critical issues with operational noise and cost.
+
+### Production Consideration
+
+In production environments, the same rule runner can be scheduled using:
+
+- AWS EventBridge Scheduler
+- Cron-based ECS task
+- Kubernetes CronJob
+
+The rule engine is idempotent per time window, so duplicate executions do not create duplicate anomalies.
