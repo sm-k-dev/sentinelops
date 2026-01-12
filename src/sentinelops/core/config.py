@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,10 +14,15 @@ class Settings(BaseSettings):
     db_user: str = "postgres"
     db_password: str | None = None
 
-    stripe_api_key: str | None = None
-    stripe_webhook_secret: str | None = None
+    stripe_api_key: SecretStr | None = None
+    stripe_webhook_secret: SecretStr | None = None
 
-    slack_webhook_url: str | None = None
+    slack_webhook_url: SecretStr | None = None
+
+    # ✅ AI 관련 추가
+    openai_api_key: SecretStr | None = None
+    ai_summary_model: str | None = None
+    ai_summary_timeout_sec: int = 12
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -87,3 +87,52 @@ In production environments, the same rule runner can be scheduled using:
 - Kubernetes CronJob
 
 The rule engine is idempotent per time window, so duplicate executions do not create duplicate anomalies.
+
+# status
+
+SentinelOps v0.3 – Operational Alerts
+Rule engine scheduled execution
+Multi-window anomaly detection (30m / 5m)
+Slack operational alerts via webhook
+Idempotent anomaly + notification delivery
+
+---
+
+---
+
+## v0.4 — Daily Ops Summary & AI Insight (Daily Batch)
+
+### What
+
+- Generate a once-a-day operational summary for the last 24 hours.
+- Inputs are strictly aggregated metrics + rule engine signals (no raw Stripe events).
+- Optional AI layer converts signals into human-friendly language.
+- Deliver summary to Slack as a single compact message (Overall / Highlights / Watch).
+
+### Why
+
+- Real-time alerts (v0.3) are useful but create fragmentation; operators still need a daily “big picture.”
+- Separate reporting from ingestion to preserve webhook performance and system stability.
+- Control AI risk by limiting scope to interpretation/language only, not calculation or decision-making.
+- Predictable cost by calling AI at most once per day with bounded input size.
+
+### Design Notes (Boundaries)
+
+- AI can:
+  - Summarize aggregated signals and trends in natural language.
+  - Provide context and prioritization wording.
+- AI must not:
+  - Perform calculations, determine thresholds, or trigger actions.
+  - Produce authoritative operational directives.
+
+### Stability & Cost
+
+- AI is optional: if AI fails, numeric/rule-based report still ships (fail-safe).
+- Daily schedule: one run per day (batch job).
+- Payload size is bounded and deterministic (signals + metrics only).
+
+### Outcome
+
+- Daily operational visibility is improved with minimal overhead.
+- Architecture remains consistent: ingestion → rules → (alerts + summary/reporting).
+- v0.4 establishes “controlled AI usage” as a portfolio differentiator.
