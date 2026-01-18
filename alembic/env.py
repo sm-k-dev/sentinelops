@@ -17,6 +17,7 @@ from sentinelops.db.base import Base  # noqa: E402
 # 최소한 tables를 정의한 모델들은 여기에 import해 두자.
 from sentinelops.models import event  # noqa: F401, E402
 from sentinelops.models import anomaly  # noqa: F401, E402
+from sentinelops.models import daily_summary_delivery  # noqa: F401, E402
 # daily_summary_delivery 모델이 있다면 이것도 추가
 # from sentinelops.models import daily_summary_delivery  # noqa: F401, E402
 

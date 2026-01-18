@@ -8,7 +8,7 @@ from typing import Optional, cast
 
 from pydantic import SecretStr
 from openai import OpenAI
-from openai import RateLimitError, APITimeoutError, APIConnectionError
+from openai import RateLimitError, APITimeoutError, APIConnectionError, AuthenticationError, PermissionDeniedError, BadRequestError
 
 from sentinelops.core.config import settings
 
@@ -169,7 +169,18 @@ def generate_ai_insight(ai_payload: dict) -> AiInsightResult:
         return AiInsightResult(summary_text=cleaned, model=model, error_code=None, error_detail=None)
 
     except RateLimitError as e:
+        msg = str(e).lower()
+        if "quota" in msg or "billing" in msg or "insufficient_quota" in msg:
+            return AiInsightResult(summary_text=None, model=model, error_code="ai_billing_or_quota", error_detail=str(e))
         return AiInsightResult(summary_text=None, model=model, error_code="ai_rate_limited", error_detail=str(e))
+
+    # ✅ 크레딧/쿼터/과금 문제(대표적으로 insufficient_quota)
+    except (PermissionDeniedError, AuthenticationError, BadRequestError) as e:
+        msg = str(e)
+        low = msg.lower()
+        if "insufficient_quota" in low or "quota" in low or "billing" in low or "exceeded" in low:
+            return AiInsightResult(summary_text=None, model=model, error_code="ai_billing_or_quota", error_detail=msg)
+        return AiInsightResult(summary_text=None, model=model, error_code="ai_auth_or_permission", error_detail=msg)
 
     except Exception as e:
         return AiInsightResult(summary_text=None, model=model, error_code=f"ai_failed:{type(e).__name__}", error_detail=str(e))

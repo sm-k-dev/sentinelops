@@ -136,3 +136,106 @@ Idempotent anomaly + notification delivery
 - Daily operational visibility is improved with minimal overhead.
 - Architecture remains consistent: ingestion → rules → (alerts + summary/reporting).
 - v0.4 establishes “controlled AI usage” as a portfolio differentiator.
+
+### AI Stability & Failure Handling
+
+- AI insight generation is fully optional and non-blocking.
+- AI failures (rate limit, billing/quota, misconfiguration) are classified and logged without breaking delivery.
+- Daily summary is always delivered with deterministic, rule-based content even when AI is unavailable.
+- AI usage is strictly bounded (once per day) with controlled input size and scope.
+- `used_ai` and `ai_error` are persisted for operational visibility and auditability.
+
+This completes v0.4 with a fail-safe, cost-aware AI integration suitable for production environments.
+
+---
+
+## Local Quickstart (Non-Docker)
+
+### Prerequisites
+
+- Python 3.x
+- PostgreSQL (local)
+- PowerShell on Windows
+
+### Setup
+
+1) Create venv & install deps
+2) Create `.env` from `.env.example` and set DB + Slack values
+
+### Initialize DB tables
+
+python -m sentinelops.scripts.init_db
+
+- Run API server
+uvicorn sentinelops.main:app --reload --app-dir src
+
+- Verify Health
+iwr "http://127.0.0.1:8000/api/v1/health" -UseBasicParsing
+
+- Demo: Anomaly lifecycle (open → acknowledged → resolved)
+iwr "http://127.0.0.1:8000/api/v1/anomalies?only_open=true&sort=severity_desc&limit=5" -UseBasicParsing | ConvertFrom-Json
+
+- pick an id from the output, e.g. 9
+
+$body = '{"status":"acknowledged"}'
+iwr -Method Patch "http://127.0.0.1:8000/api/v1/anomalies/9" -ContentType "application/json" -Body $body -UseBasicParsing | ConvertFrom-Json
+
+$body = '{"status":"resolved"}'
+iwr -Method Patch "http://127.0.0.1:8000/api/v1/anomalies/9" -ContentType "application/json" -Body $body -UseBasicParsing | ConvertFrom-Json
+
+- Run daily summary (AI optional)
+python -m sentinelops.scripts.run_daily_summary
+
+### Demo Seed Data
+
+For demos and local testing, SentinelOps provides a seed script that creates
+deterministic open anomalies without relying on live Stripe data.
+
+python -m sentinelops.scripts.seed_demo_anomalies
+
+This ensures the anomaly lifecycle API (open → acknowledged → resolved)
+can always be demonstrated reliably.
+
+### Demo-only filtering
+
+For clean demos, anomaly queries support a `demo_only=true` parameter
+which filters seeded demo anomalies (identified by `[demo]` title prefix).
+
+/api/v1/anomalies?only_open=true&demo_only=true
+
+---
+
+## v0.5 — Operations Dashboard & Anomaly Lifecycle
+
+### What
+
+Expose a minimal operations dashboard API for anomalies.
+Support anomaly lifecycle transitions:
+open → acknowledged → resolved
+Provide filtered views for:
+open-only anomalies
+severity-based sorting
+demo-only data (for clean demos)
+
+### Why
+
+Operators need a clear, queryable view of current issues.
+Status transitions must be explicit, validated, and auditable.
+A demo-friendly view is required to showcase the system without production noise.
+
+### Design Notes
+
+Lifecycle rules are centralized in anomaly_lifecycle service.
+Invalid or no-op transitions are rejected with clear errors (409).
+Demo data is tagged at the data level (evidence._demo = true), not inferred from presentation.
+API remains thin; all domain logic lives in services.
+
+### Outcome
+
+Anomaly lifecycle is fully enforceable and observable via API.
+Demo scenarios can be executed end-to-end:
+  anomaly creation → ack → resolve
+v0.5 completes the operational control loop:
+  ingestion → rules → alerts → dashboard → human action.
+
+Status: v0.5 complete – operational dashboard and lifecycle management in place.
