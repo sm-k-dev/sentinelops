@@ -20,37 +20,26 @@ from sentinelops.api.v1.schemas.anomaly import (
 router = APIRouter(prefix="/anomalies", tags=["anomalies"])
 
 
-@router.get("/demo", response_model=AnomalyListOut)
-def get_demo_anomalies(
-    db: Session = Depends(get_db),
-    only_open: bool = Query(default=True),
-    sort: str = Query(default="severity_desc", pattern="^(recent|severity_desc)$"),
-    limit: int = Query(default=50, ge=1, le=200),
-):
-    rows = list_anomalies(
-        db,
-        only_open=only_open,
-        demo_only=True,
-        sort=sort,
-        limit=limit,
-    )
-    items = [AnomalyOut.model_validate(r) for r in rows]
-    return AnomalyListOut(items=items, count=len(items))
-
-
 @router.get("", response_model=AnomalyListOut)
 def get_anomalies(
     db: Session = Depends(get_db),
     status: Optional[str] = Query(default=None, description="open/acknowledged/resolved"),
     only_open: bool = Query(default=False),
-    demo_only: bool = Query(default=False),
+    demo_only: bool = Query(default=False, description="Filter demo anomalies only"),
     sort: str = Query(default="recent", pattern="^(recent|severity_desc)$"),
     limit: int = Query(default=50, ge=1, le=200),
 ):
     if status is not None and status not in ANOMALY_STATUSES:
         raise HTTPException(status_code=422, detail=f"Invalid status: {status}")
 
-    rows = list_anomalies(db, status=status, only_open=only_open, demo_only=demo_only, sort=sort, limit=limit)
+    rows = list_anomalies(
+        db,
+        status=status,
+        only_open=only_open,
+        sort=sort,
+        limit=limit,
+        demo_only=demo_only,
+    )
     items = [AnomalyOut.model_validate(r) for r in rows]
     return AnomalyListOut(items=items, count=len(items))
 
@@ -58,9 +47,16 @@ def get_anomalies(
 @router.get("/open", response_model=AnomalyListOut)
 def get_open_anomalies_sorted_by_severity(
     db: Session = Depends(get_db),
+    demo_only: bool = Query(default=False, description="Filter demo anomalies only"),
     limit: int = Query(default=50, ge=1, le=200),
 ):
-    rows = list_anomalies(db, only_open=True, sort="severity_desc", limit=limit)
+    rows = list_anomalies(
+        db,
+        only_open=True,
+        demo_only=demo_only,
+        sort="severity_desc",
+        limit=limit,
+    )
     items = [AnomalyOut.model_validate(r) for r in rows]
     return AnomalyListOut(items=items, count=len(items))
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from sqlalchemy import case, desc, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Session
-
 from typing import cast
+
+from sqlalchemy import case, desc, select, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import true as sql_true
 
 from sentinelops.models.anomaly import Anomaly
 
@@ -33,10 +33,14 @@ def list_anomalies(
         stmt = stmt.where(Anomaly.status == "open")
     elif status:
         stmt = stmt.where(Anomaly.status == status)
-    
+
+    # ✅ demo_only: title prefix OR evidence.demo=true 둘 중 하나면 데모로 인정
     if demo_only:
         stmt = stmt.where(
-            Anomaly.evidence["._demo"].as_boolean() == True  # noqa: E712
+            or_(
+                Anomaly.title.ilike("[demo]%"),
+                Anomaly.evidence["demo"].as_boolean() == sql_true(),
+            )
         )
 
     if sort == "severity_desc":

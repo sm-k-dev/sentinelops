@@ -17,7 +17,7 @@ Prerequisites
     cd SentinelOps
     python -m venv .venv
     .\.venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
+    pip install -e .
 
 2) Environment Variables
     .env.example을 복사하여 .env 생성 후 값 설정:
@@ -117,3 +117,10 @@ API 쿼리 파라미터:
     title 또는 rule_code 기준 [demo] anomaly만 반환
     실제 운영 anomaly와 시각적으로 분리 가능
     데모 화면이 깔끔해짐
+
+---
+
+## Docekr - Initialize DB (first run only)
+
+docker compose up -d --build
+docker compose exec api python -m sentinelops.scripts.init_db
