@@ -239,3 +239,20 @@ v0.5 completes the operational control loop:
   ingestion → rules → alerts → dashboard → human action.
 
 Status: v0.5 complete – operational dashboard and lifecycle management in place.
+
+---
+
+## TODO / Optional Backlog (Post v1.0)
+
+The following items are intentional backlog items.
+They are not required for v1.0 delivery but represent future refinement
+towards a more extensible rule engine.
+
+- [ ] Rule runner commonization (shared execution flow for anomaly rules)
+- [ ] Extract rule thresholds and windows into rule definitions (data-driven rules)
+- [ ] Introduce generic rule execution interface (input → decision → anomaly)
+- [ ] Reduce duplication across rule scripts (windowing, idempotency checks)
+- [ ] Optional: persist rule metadata for dynamic tuning
+- [ ] Optional: rule-level enable/disable flags for production control
+
+---
